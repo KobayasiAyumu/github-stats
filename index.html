@@ -4,42 +4,34 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GitHub Stats Dashboard</title>
-  <meta name="description" content="GitHubユーザーの活動・リポジトリ・言語使用率を美しく可視化するダッシュボード" />
-  <!-- Google Fonts -->
+  <meta name="description" content="GitHub ユーザーのプロフィール、リポジトリ、言語傾向をまとめて確認できるダッシュボード。" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <!-- Font Awesome -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-
-  <!-- ヘッダー -->
   <header class="site-header">
     <div class="header-inner">
       <div class="logo">
         <i class="fa-brands fa-github logo-icon"></i>
         <span class="logo-text">GitHub Stats</span>
       </div>
-      <p class="header-sub">GitHubユーザーの活動を可視化する</p>
-      <button class="theme-btn" id="btn-theme" aria-label="テーマ切替">
+      <p class="header-sub">プロフィールとリポジトリの傾向を素早く確認</p>
+      <button class="theme-btn" id="btn-theme" type="button" aria-label="テーマ切り替え">
         <i class="fa-solid fa-moon"></i>
       </button>
     </div>
   </header>
 
-  <!-- メインコンテンツ -->
   <main class="main-container">
-
-    <!-- 検索セクション -->
     <section class="search-section" id="search-section">
       <div class="search-card glass-card">
-        <h1 class="search-title">GitHubユーザーを検索</h1>
-        <p class="search-description">GitHubのユーザー名を入力してください</p>
-        <form class="search-form" id="search-form" aria-label="GitHubユーザー検索フォーム">
+        <h1 class="search-title">GitHub ユーザーを検索</h1>
+        <p class="search-description">ユーザー名を入力すると、主要な統計情報と上位リポジトリを表示します。</p>
+        <form class="search-form" id="search-form" aria-label="GitHub ユーザー検索フォーム">
           <div class="search-input-wrapper">
             <i class="fa-brands fa-github search-icon"></i>
             <input
@@ -48,7 +40,7 @@
               class="search-input"
               placeholder="例: torvalds"
               autocomplete="off"
-              aria-label="GitHubユーザー名"
+              aria-label="GitHub ユーザー名"
               required
             />
             <button type="submit" class="search-btn" id="search-btn" aria-label="検索">
@@ -57,42 +49,35 @@
             </button>
           </div>
         </form>
-        <!-- 検索履歴ドロップダウン -->
         <div class="history-dropdown hidden" id="history-dropdown"></div>
-        <!-- サジェスト例 -->
         <div class="quick-search">
           <span class="quick-label">例:</span>
-          <button class="quick-btn" data-user="torvalds">torvalds</button>
-          <button class="quick-btn" data-user="gvanrossum">gvanrossum</button>
-          <button class="quick-btn" data-user="yuki-kimoto">yuki-kimoto</button>
+          <button class="quick-btn" type="button" data-user="torvalds">torvalds</button>
+          <button class="quick-btn" type="button" data-user="gaearon">gaearon</button>
+          <button class="quick-btn" type="button" data-user="gvanrossum">gvanrossum</button>
         </div>
       </div>
     </section>
 
-    <!-- ローディング表示 -->
     <section class="loading-section hidden" id="loading-section" aria-live="polite">
       <div class="loading-spinner">
         <div class="spinner-ring"></div>
-        <p class="loading-text">GitHubからデータを取得中...</p>
+        <p class="loading-text">GitHub からデータを取得中...</p>
       </div>
     </section>
 
-    <!-- エラー表示 -->
     <section class="error-section hidden" id="error-section" aria-live="assertive">
       <div class="error-card glass-card">
         <i class="fa-solid fa-triangle-exclamation error-icon"></i>
         <h2 class="error-title" id="error-title">エラーが発生しました</h2>
         <p class="error-message" id="error-message"></p>
-        <button class="retry-btn" id="retry-btn">
+        <button class="retry-btn" id="retry-btn" type="button">
           <i class="fa-solid fa-rotate-right"></i> 再試行
         </button>
       </div>
     </section>
 
-    <!-- ダッシュボードコンテンツ（取得後に表示） -->
     <section class="dashboard hidden" id="dashboard">
-
-      <!-- プロフィールセクション -->
       <div class="profile-section">
         <div class="profile-card glass-card">
           <div class="profile-header">
@@ -102,129 +87,105 @@
               <p class="profile-login" id="profile-login"></p>
               <p class="profile-bio" id="profile-bio"></p>
               <div class="profile-meta">
-                <span class="meta-item" id="profile-location">
+                <span class="meta-item hidden" id="profile-location">
                   <i class="fa-solid fa-location-dot"></i> <span></span>
                 </span>
-                <a class="meta-item meta-link" id="profile-blog" href="#" target="_blank" rel="noopener">
+                <a class="meta-item meta-link hidden" id="profile-blog" href="#" target="_blank" rel="noopener noreferrer">
                   <i class="fa-solid fa-link"></i> <span></span>
                 </a>
                 <span class="meta-item" id="profile-joined">
                   <i class="fa-solid fa-calendar"></i> <span></span>
                 </span>
               </div>
-              <a class="github-link-btn" id="github-link" href="#" target="_blank" rel="noopener">
-                <i class="fa-brands fa-github"></i> GitHubで見る
+              <a class="github-link-btn" id="github-link" href="#" target="_blank" rel="noopener noreferrer">
+                <i class="fa-brands fa-github"></i> GitHub で開く
               </a>
             </div>
           </div>
         </div>
 
-        <!-- 統計カード -->
         <div class="stats-grid">
           <div class="stat-card glass-card">
-            <div class="stat-icon-wrap stat-green">
-              <i class="fa-solid fa-star"></i>
-            </div>
+            <div class="stat-icon-wrap stat-green"><i class="fa-solid fa-star"></i></div>
             <div class="stat-info">
               <span class="stat-value" id="stat-stars">0</span>
-              <span class="stat-label">総スター数</span>
+              <span class="stat-label">合計スター数</span>
             </div>
           </div>
           <div class="stat-card glass-card">
-            <div class="stat-icon-wrap stat-blue">
-              <i class="fa-solid fa-book"></i>
-            </div>
+            <div class="stat-icon-wrap stat-blue"><i class="fa-solid fa-book"></i></div>
             <div class="stat-info">
               <span class="stat-value" id="stat-repos">0</span>
-              <span class="stat-label">リポジトリ数</span>
+              <span class="stat-label">公開リポジトリ</span>
             </div>
           </div>
           <div class="stat-card glass-card">
-            <div class="stat-icon-wrap stat-purple">
-              <i class="fa-solid fa-users"></i>
-            </div>
+            <div class="stat-icon-wrap stat-purple"><i class="fa-solid fa-users"></i></div>
             <div class="stat-info">
               <span class="stat-value" id="stat-followers">0</span>
               <span class="stat-label">フォロワー</span>
             </div>
           </div>
           <div class="stat-card glass-card">
-            <div class="stat-icon-wrap stat-orange">
-              <i class="fa-solid fa-code-fork"></i>
-            </div>
+            <div class="stat-icon-wrap stat-orange"><i class="fa-solid fa-code-fork"></i></div>
             <div class="stat-info">
               <span class="stat-value" id="stat-forks">0</span>
-              <span class="stat-label">総フォーク数</span>
+              <span class="stat-label">合計フォーク数</span>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- チャートセクション -->
       <div class="charts-section">
-
-        <!-- 言語分布チャート -->
         <div class="chart-card glass-card">
-          <h3 class="chart-title">
-            <i class="fa-solid fa-code"></i> 言語使用率
-          </h3>
+          <h3 class="chart-title"><i class="fa-solid fa-code"></i> 言語使用比率</h3>
           <div class="lang-chart-wrapper">
-            <canvas id="language-chart" aria-label="言語使用率ドーナツチャート"></canvas>
+            <canvas id="language-chart" aria-label="言語使用比率グラフ"></canvas>
             <div class="lang-legend" id="lang-legend"></div>
           </div>
         </div>
 
-        <!-- アクティビティチャート -->
         <div class="chart-card chart-card--wide glass-card">
-          <h3 class="chart-title">
-            <i class="fa-solid fa-chart-bar"></i> 月別リポジトリ更新数（過去12ヶ月）
-          </h3>
+          <h3 class="chart-title"><i class="fa-solid fa-chart-bar"></i> 最近 12 か月の更新数</h3>
           <div class="activity-chart-wrapper">
-            <canvas id="activity-chart" aria-label="月別アクティビティ棒グラフ"></canvas>
+            <canvas id="activity-chart" aria-label="最近 12 か月の更新数グラフ"></canvas>
           </div>
         </div>
-
       </div>
 
-      <!-- トップリポジトリセクション -->
       <div class="repos-section">
         <h3 class="section-title">
-          <i class="fa-solid fa-fire"></i> トップリポジトリ
+          <i class="fa-solid fa-fire"></i> 人気リポジトリ
           <span class="section-subtitle">スター数順</span>
         </h3>
         <div class="repo-grid" id="repo-grid"></div>
       </div>
 
-      <!-- ダッシュボードアクション -->
       <div class="dashboard-actions">
-        <button class="action-btn" id="btn-share">
+        <button class="action-btn" id="btn-share" type="button">
           <i class="fa-solid fa-share-nodes"></i>
-          <span class="btn-text">シェア</span>
+          <span class="btn-text">共有</span>
         </button>
-        <button class="action-btn" id="btn-export">
+        <button class="action-btn" id="btn-export" type="button">
           <i class="fa-solid fa-download"></i>
-          <span class="btn-text">JSONエクスポート</span>
+          <span class="btn-text">JSON エクスポート</span>
         </button>
-        <button class="back-btn" id="back-btn">
+        <button class="back-btn" id="back-btn" type="button">
           <i class="fa-solid fa-arrow-left"></i>
-          <span class="btn-text">別のユーザーを検索</span>
+          <span class="btn-text">検索に戻る</span>
         </button>
       </div>
-
     </section>
-
   </main>
 
-  <!-- フッター -->
   <footer class="site-footer">
     <p>
-      Powered by <a href="https://docs.github.com/en/rest" target="_blank" rel="noopener">GitHub REST API</a> &nbsp;|&nbsp;
-      <i class="fa-solid fa-heart" style="color: #f85149;"></i> Built with HTML / CSS / JavaScript
+      Powered by <a href="https://docs.github.com/en/rest" target="_blank" rel="noopener noreferrer">GitHub REST API</a>
+      &nbsp;|&nbsp; Built with HTML / CSS / JavaScript
     </p>
   </footer>
 
-  <!-- トースト通知コンテナ -->
-  <div class="toast-container" id="toast-container"></div>
+  <div class="toast-container" id="toast-container" aria-live="polite" aria-atomic="true"></div>
 
   <script src="charts.js"></script>
   <script src="app.js"></script>

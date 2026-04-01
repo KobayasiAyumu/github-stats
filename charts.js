@@ -1,9 +1,3 @@
-/**
- * charts.js
- * Chart.js を使ったグラフ描画モジュール
- */
-
-// 言語カラーマップ（GitHubのオフィシャルカラーに準拠）
 const LANGUAGE_COLORS = {
   JavaScript: '#f1e05a',
   TypeScript: '#3178c6',
@@ -29,58 +23,51 @@ const LANGUAGE_COLORS = {
   default: '#8b949e',
 };
 
-/**
- * 言語名からカラーコードを取得する
- * @param {string} lang - 言語名
- * @returns {string} カラーコード
- */
+let languageChartInstance = null;
+let activityChartInstance = null;
+
 function getLangColor(lang) {
   return LANGUAGE_COLORS[lang] ?? LANGUAGE_COLORS.default;
 }
 
-/**
- * 現在のテーマからチャートのborderColorを取得する
- * @returns {string} CSS変数 --bg-primary の計算値
- */
 function getChartBgColor() {
   return getComputedStyle(document.documentElement).getPropertyValue('--bg-primary').trim() || '#0d1117';
 }
 
-// グラフインスタンスを保持（再描画時に破棄するため）
-let languageChartInstance = null;
-let activityChartInstance = null;
+function getChartTextColor() {
+  return getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim() || '#8b949e';
+}
 
-/**
- * 言語使用率ドーナツチャートを描画する
- * @param {Object} languages - { 言語名: バイト数 } のオブジェクト
- */
+function getChartGridColor() {
+  const border = getComputedStyle(document.documentElement).getPropertyValue('--border-color').trim();
+  return border || 'rgba(48, 54, 61, 0.5)';
+}
+
 function renderLanguageChart(languages) {
   const canvas = document.getElementById('language-chart');
   const legend = document.getElementById('lang-legend');
+  if (!canvas || !legend) return;
 
-  // 前回のチャートを破棄
   if (languageChartInstance) {
     languageChartInstance.destroy();
     languageChartInstance = null;
   }
   legend.innerHTML = '';
 
-  // 上位8言語に絞る
   const sorted = Object.entries(languages)
     .sort(([, a], [, b]) => b - a)
     .slice(0, 8);
 
-  if (sorted.length === 0) {
-    canvas.parentElement.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:40px 0;">言語データなし</p>';
+  if (!sorted.length) {
+    legend.innerHTML = '<p style="color:var(--text-muted);text-align:center;width:100%;">言語データがありません</p>';
     return;
   }
 
-  const total = sorted.reduce((sum, [, v]) => sum + v, 0);
+  const total = sorted.reduce((sum, [, bytes]) => sum + bytes, 0);
   const labels = sorted.map(([lang]) => lang);
-  const data = sorted.map(([, v]) => v);
+  const data = sorted.map(([, bytes]) => bytes);
   const colors = labels.map(getLangColor);
 
-  // ドーナツチャート生成
   languageChartInstance = new Chart(canvas.getContext('2d'), {
     type: 'doughnut',
     data: {
@@ -96,32 +83,23 @@ function renderLanguageChart(languages) {
     },
     options: {
       responsive: true,
-      cutout: '70%',
+      cutout: '68%',
       plugins: {
         legend: { display: false },
         tooltip: {
           callbacks: {
-            label: (ctx) => {
-              const pct = ((ctx.parsed / total) * 100).toFixed(1);
-              return ` ${ctx.label}: ${pct}%`;
-            },
+            label: (ctx) => `${ctx.label}: ${((ctx.parsed / total) * 100).toFixed(1)}%`,
           },
           backgroundColor: '#161b22',
-          borderColor: '#30363d',
+          borderColor: getChartGridColor(),
           borderWidth: 1,
           titleColor: '#e6edf3',
           bodyColor: '#8b949e',
         },
       },
-      animation: {
-        animateRotate: true,
-        duration: 800,
-        easing: 'easeOutQuart',
-      },
     },
   });
 
-  // カスタム凡例を生成
   sorted.forEach(([lang, bytes]) => {
     const pct = ((bytes / total) * 100).toFixed(1);
     const item = document.createElement('div');
@@ -135,45 +113,35 @@ function renderLanguageChart(languages) {
   });
 }
 
-/**
- * 月別リポジトリ更新数の棒グラフを描画する
- * @param {Array} repos - リポジトリ配列（pushed_at プロパティを使用）
- */
 function renderActivityChart(repos) {
   const canvas = document.getElementById('activity-chart');
+  if (!canvas) return;
 
-  // 前回のチャートを破棄
   if (activityChartInstance) {
     activityChartInstance.destroy();
     activityChartInstance = null;
   }
 
-  // 過去12ヶ月のラベルと月数を生成
   const now = new Date();
   const months = [];
   const labels = [];
-  for (let i = 11; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
-    labels.push(`${d.getMonth() + 1}月`);
+  for (let i = 11; i >= 0; i -= 1) {
+    const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`);
+    labels.push(`${date.getMonth() + 1}月`);
   }
 
-  // 月ごとの更新数を集計
-  const counts = {};
-  months.forEach((m) => { counts[m] = 0; });
-
+  const counts = Object.fromEntries(months.map((month) => [month, 0]));
   repos.forEach((repo) => {
     if (!repo.pushed_at) return;
-    const pushed = new Date(repo.pushed_at);
-    const key = `${pushed.getFullYear()}-${String(pushed.getMonth() + 1).padStart(2, '0')}`;
-    if (key in counts) counts[key]++;
+    const pushedAt = new Date(repo.pushed_at);
+    const key = `${pushedAt.getFullYear()}-${String(pushedAt.getMonth() + 1).padStart(2, '0')}`;
+    if (key in counts) counts[key] += 1;
   });
 
-  const data = months.map((m) => counts[m]);
-
-  // グラデーション背景を生成
+  const data = months.map((month) => counts[month]);
   const ctx = canvas.getContext('2d');
-  const gradient = ctx.createLinearGradient(0, 0, 0, 200);
+  const gradient = ctx.createLinearGradient(0, 0, 0, 220);
   gradient.addColorStop(0, 'rgba(57, 211, 83, 0.8)');
   gradient.addColorStop(1, 'rgba(57, 211, 83, 0.15)');
 
@@ -182,8 +150,8 @@ function renderActivityChart(repos) {
     data: {
       labels,
       datasets: [{
-        label: '更新されたリポジトリ数',
         data,
+        label: '更新されたリポジトリ数',
         backgroundColor: gradient,
         borderColor: 'rgba(57, 211, 83, 0.9)',
         borderWidth: 1,
@@ -198,10 +166,10 @@ function renderActivityChart(repos) {
         legend: { display: false },
         tooltip: {
           callbacks: {
-            label: (ctx) => ` ${ctx.parsed.y} リポジトリ更新`,
+            label: (ctx) => `${ctx.parsed.y} repositories`,
           },
           backgroundColor: '#161b22',
-          borderColor: '#30363d',
+          borderColor: getChartGridColor(),
           borderWidth: 1,
           titleColor: '#e6edf3',
           bodyColor: '#8b949e',
@@ -209,23 +177,19 @@ function renderActivityChart(repos) {
       },
       scales: {
         x: {
-          grid: { color: 'rgba(48, 54, 61, 0.5)', drawBorder: false },
-          ticks: { color: '#8b949e', font: { size: 11 } },
+          grid: { color: getChartGridColor(), drawBorder: false },
+          ticks: { color: getChartTextColor(), font: { size: 11 } },
         },
         y: {
           beginAtZero: true,
-          grid: { color: 'rgba(48, 54, 61, 0.5)', drawBorder: false },
+          grid: { color: getChartGridColor(), drawBorder: false },
           ticks: {
-            color: '#8b949e',
+            color: getChartTextColor(),
             font: { size: 11 },
             stepSize: 1,
             precision: 0,
           },
         },
-      },
-      animation: {
-        duration: 800,
-        easing: 'easeOutQuart',
       },
     },
   });
